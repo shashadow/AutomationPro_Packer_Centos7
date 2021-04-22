@@ -1,7 +1,7 @@
 {
   "builders": [
     {
-	  "cluster": "Banstead",
+	  "cluster": "AutomationPro-C-1",
         "datacenter": "{{user `vsphere_datacenter`}}",
         "datastore": "{{user `vsphere_datastore`}}",
         "host": "{{user `vsphere_host`}}",
