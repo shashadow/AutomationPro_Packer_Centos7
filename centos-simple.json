@@ -1,7 +1,7 @@
 {
   "builders": [
     {
-	  "cluster": "AutomationPro-C-1",
+	"cluster": "AutomationPro-C-1",
         "datacenter": "{{user `vsphere_datacenter`}}",
         "datastore": "{{user `vsphere_datastore`}}",
         "host": "{{user `vsphere_host`}}",
@@ -33,7 +33,7 @@
 	  ],
 	  "network_adapters": [
 		  {
-			"network": "VM_VLAN_172",
+			"network": "routable",
 			"network_card": "vmxnet3"
 		  }
 	  ]
