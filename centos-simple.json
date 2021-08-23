@@ -1,7 +1,7 @@
 {
   "builders": [
     {
-	"cluster": "AutomationPro-C-1",
+	"cluster": "fr-paz2-hrpd01-cl01",
         "datacenter": "{{user `vsphere_datacenter`}}",
         "datastore": "{{user `vsphere_datastore`}}",
         "host": "{{user `vsphere_host`}}",
@@ -18,8 +18,8 @@
         "<tab> text ks=cdrom:/dev/sr1:/ks.cfg<enter><wait>"
 	  ],
 	  "guest_os_type": "centos7_64Guest",
-	  "CPUs": "1",
-	  "RAM": "4096",
+	  "CPUs": "2",
+	  "RAM": "2048",
 	  "iso_checksum": "{{user `checksum`}}",
 	  "iso_url": "{{user `url`}}",
 	  "shutdown_command": "sudo /sbin/halt -p",
@@ -33,7 +33,7 @@
 	  ],
 	  "network_adapters": [
 		  {
-			"network": "vLAN-001 (Net 206)",
+			"network": "vratest",
 			"network_card": "vmxnet3"
 		  }
 	  ]
