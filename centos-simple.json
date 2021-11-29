@@ -1,7 +1,7 @@
 {
   "builders": [
     {
-	"cluster": "fr-paz2-hrpd01-cl01",
+	"cluster": "Cluster",
         "datacenter": "{{user `vsphere_datacenter`}}",
         "datastore": "{{user `vsphere_datastore`}}",
         "host": "{{user `vsphere_host`}}",
@@ -19,7 +19,7 @@
 	  ],
 	  "guest_os_type": "centos7_64Guest",
 	  "CPUs": "2",
-	  "RAM": "2048",
+	  "RAM": "4096",
 	  "iso_checksum": "{{user `checksum`}}",
 	  "iso_url": "{{user `url`}}",
 	  "shutdown_command": "sudo /sbin/halt -p",
@@ -33,7 +33,7 @@
 	  ],
 	  "network_adapters": [
 		  {
-			"network": "vratest",
+			"network": "vLAN-001 (Net 206)",
 			"network_card": "vmxnet3"
 		  }
 	  ]
