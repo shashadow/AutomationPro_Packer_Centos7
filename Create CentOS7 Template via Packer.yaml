@@ -1,0 +1,155 @@
+---
+project: PACKER Template CentOS7
+kind: PIPELINE
+name: Create CentOS7 Template via Packer
+icon: piggy-bank,,is-pink
+enabled: true
+concurrency: 10
+options: [
+  DOCKER_TRIGGER]
+input:
+  DOCKER_REGISTRY_EVENT_OWNER_NAME: ''
+  DOCKER_REGISTRY_IMAGE: ''
+  DOCKER_REGISTRY_REPO_NAME: ''
+  DOCKER_REGISTRY_REPO_NAMESPACE: ''
+  DOCKER_REGISTRY_TAG: ''
+  GIT_REPOSITORY_PATH: https://github.com/shashadow/AutomationPro_Packer_Centos7.git
+  PACKER_FILE: packer_1.7.0_linux_amd64.zip
+  PACKER_URI: https://releases.hashicorp.com/packer/
+  PACKER_VERSION: 1.7.0
+  REPO_FOLDER: source
+  REQUIRES_PACKER: 'true'
+_inputMeta:
+  PACKER_FILE:
+    mandatory: true
+    description: The Packer download that we wish to obtain for use
+  DOCKER_REGISTRY_REPO_NAMESPACE:
+    mandatory: false
+    description: ''
+  PACKER_VERSION:
+    mandatory: true
+    description: The version of Packer that we are going to be using
+  PACKER_URI:
+    mandatory: true
+    description: The base url for the Packer download. The full download url is constructed by combining
+      the PACKER_URI + PACKER_VERSION + "/" + PACKER_FILE
+  REPO_FOLDER:
+    mandatory: true
+    description: This is the folder target within our Docker container that our Git repository will be
+      cloned to
+  DOCKER_REGISTRY_IMAGE:
+    mandatory: false
+    description: ''
+  DOCKER_REGISTRY_TAG:
+    mandatory: false
+    description: ''
+  DOCKER_REGISTRY_EVENT_OWNER_NAME:
+    mandatory: false
+    description: ''
+  GIT_REPOSITORY_PATH:
+    mandatory: true
+    description: This is full url to the Github repository that is hosting the Packer build definition
+      and the kickstart file for the CentOS7 build
+  DOCKER_REGISTRY_REPO_NAME:
+    mandatory: false
+    description: ''
+  REQUIRES_PACKER:
+    mandatory: true
+    description: This flag indicates whether Packer should be downloaded and run. This flag enables me
+      to disable all or part of the Pipeline for testing purposes
+workspace:
+  type: DOCKER
+  endpoint: DebNetwork01 VM Docker
+  image: samperrin/alpine-codestream-ci:latest
+  registry: ''
+  path: /build
+  autoCloneForTrigger: true
+  limits:
+    memory: 512
+    cpu: 1.0
+stageOrder:
+- Preparation
+- Stage1
+stages:
+  Stage1:
+    taskOrder:
+    - Validate Packer Config
+    - Build Image
+    tasks:
+      Build Image:
+        type: CI
+        preCondition: '"${input.REQUIRES_PACKER}" == "true"'
+        input:
+          steps:
+          - sed -i 's/insert_rootpw/${var.ssh_password}/g' ${input.REPO_FOLDER}/cd/ks.cfg
+          - ''
+          - apk add xorriso
+          - ''
+          - /build/packer build -force -var 'vsphere_password=${var.vcenter_password}' -var 'ssh_password=${var.ssh_password}'
+            -var 'ssh_username=root' -var 'vsphere_datastore=Lun-2-Raid5-SSD' -var 'vsphere_datacenter=Datacenter'
+            -var 'vsphere_vcenter=vcenter1.konyxia.local' -var 'vsphere_username=administrator@vsphere.local'
+            -var 'cd_path=${input.REPO_FOLDER}' ${input.REPO_FOLDER}/centos-simple.json
+          - ''
+          export: [
+            ]
+          artifacts: [
+            ]
+          process: [
+            ]
+      Validate Packer Config:
+        type: CI
+        preCondition: '"${input.REQUIRES_PACKER}" == "true"'
+        input:
+          steps:
+          - /build/packer validate -var 'vsphere_password=${var.vcenter_password}' -var 'ssh_password=${var.ssh_password}'
+            -var 'ssh_username=root' -var 'vsphere_datastore=Lun-2-Raid5-SSD' -var 'vsphere_datacenter=Datacenter1'
+            -var 'vsphere_vcenter=vcenter1.konyxia.local' -var 'vsphere_username=administrator@vsphere.local'
+            -var 'cd_path=${input.REPO_FOLDER}' ${input.REPO_FOLDER}/centos-simple.json
+          export: [
+            ]
+          artifacts: [
+            ]
+          process: [
+            ]
+  Preparation:
+    taskOrder:
+    - Preparation Container
+    - Get Packer,Clone Repo Packer
+    tasks:
+      Preparation Container:
+        type: CI
+        input:
+          steps:
+          - export PACKER_DOWNLOAD=${input.PACKER_URI}${input.PACKER_VERSION}/${input.PACKER_FILE}
+          export:
+          - PACKER_DOWNLOAD
+          artifacts: [
+            ]
+          process: [
+            ]
+      Clone Repo Packer:
+        type: CI
+        preCondition: '"${input.REQUIRES_PACKER}" == "true"'
+        input:
+          steps:
+          - git clone ${input.GIT_REPOSITORY_PATH} ${input.REPO_FOLDER}
+          export: [
+            ]
+          artifacts: [
+            ]
+          process: [
+            ]
+      Get Packer:
+        type: CI
+        preCondition: '"${input.REQUIRES_PACKER}" == "true"'
+        input:
+          steps:
+          - curl -O ${Preparation.Preparation Container.output.exports.PACKER_DOWNLOAD}
+          - unzip ${input.PACKER_FILE}
+          - '  '
+          export: [
+            ]
+          artifacts: [
+            ]
+          process: [
+            ]

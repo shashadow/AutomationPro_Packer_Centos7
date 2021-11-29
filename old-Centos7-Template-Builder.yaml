@@ -1,0 +1,128 @@
+---
+project: Production
+kind: PIPELINE
+name: Centos7-Template-Builder
+icon: organization,left, is-success
+enabled: true
+description: Builds Centos7 template using Packer
+concurrency: 10
+options: [
+  DOCKER_TRIGGER]
+input:
+  GIT_REPOSITORY_PATH: https://github.com/shashadow/AutomationPro_Packer_Centos7.git 
+  PACKER_FILE: packer_1.7.0_linux_amd64.zip
+  PACKER_URI: https://releases.hashicorp.com/packer/
+  PACKER_VERSION: 1.7.0
+  REPO_FOLDER: source
+  REQUIRES_PACKER: 'true'
+_inputMeta:
+  PACKER_FILE:
+    mandatory: true
+    description: ''
+  PACKER_VERSION:
+    mandatory: true
+    description: ''
+  PACKER_URI:
+    mandatory: true
+    description: ''
+  REPO_FOLDER:
+    mandatory: true
+    description: ''
+  GIT_REPOSITORY_PATH:
+    mandatory: true
+    description: The repo to clone from GitHub
+  REQUIRES_PACKER:
+    mandatory: true
+    description: If true, downloads packer and prepares for packer tasks
+workspace:
+  endpoint: aprodkr1 - docker
+  image: samperrin/alpine-codestream-ci:latest
+  registry: ''
+  path: /build
+  autoCloneForTrigger: true
+  limits:
+    memory: 512
+    cpu: 1.0
+stageOrder:
+- Preparation
+- Packer Validation And Build
+stages:
+  Packer Validation And Build:
+    taskOrder:
+    - Validate Packer Config
+    - Build Image
+    tasks:
+      Build Image:
+        type: CI
+        preCondition: '"${input.REQUIRES_PACKER}" == "true"'
+        input:
+          steps:
+          - sed -i 's/insert_rootpw/${var.ssh_password}/g' ${input.REPO_FOLDER}/cd/ks.cfg
+          - apk add xorriso
+          - ''
+          - ./packer build -force -var 'vsphere_password=${var.vcenter_password}' -var 'ssh_password=${var.ssh_password}'
+            -var 'ssh_username=root' -var 'vsphere_datastore=ds-iscsi-02' -var 'vsphere_datacenter=AutomationPro'
+            -var 'vsphere_vcenter=vcenter1.konyxia.local' -var 'vsphere_username=administrator@vsphere.local'
+            -var 'cd_path=${input.REPO_FOLDER}' ${input.REPO_FOLDER}/centos-simple.json
+          export: [
+            ]
+          artifacts: [
+            ]
+          process: [
+            ]
+      Validate Packer Config:
+        type: CI
+        preCondition: '"${input.REQUIRES_PACKER}" == "true"'
+        input:
+          steps:
+          - ./packer validate -var 'vsphere_password=${var.vcenter_password}' -var 'ssh_password=${var.ssh_password}'
+            -var 'ssh_username=root' -var 'vsphere_datastore=ds-iscsi-02' -var 'vsphere_datacenter=AutomationPro'
+            -var 'vsphere_vcenter=vcenter1.konyxia.local' -var 'vsphere_username=administrator@vsphere.local'
+            -var 'cd_path=${input.REPO_FOLDER}' ${input.REPO_FOLDER}/centos-simple.json
+          export: [
+            ]
+          artifacts: [
+            ]
+          process: [
+            ]
+  Preparation:
+    taskOrder:
+    - Prepare Container
+    - Obtain Packer,Clone Packer Repo
+    tasks:
+      Clone Packer Repo:
+        type: CI
+        preCondition: '"${input.REQUIRES_PACKER}" == "true"'
+        input:
+          steps:
+          - git clone ${input.GIT_REPOSITORY_PATH} ${input.REPO_FOLDER}
+          export: [
+            ]
+          artifacts: [
+            ]
+          process: [
+            ]
+      Prepare Container:
+        type: CI
+        input:
+          steps:
+          - export PACKER_DOWNLOAD=${input.PACKER_URI}${input.PACKER_VERSION}/${input.PACKER_FILE}
+          export:
+          - PACKER_DOWNLOAD
+          artifacts: [
+            ]
+          process: [
+            ]
+      Obtain Packer:
+        type: CI
+        preCondition: '"${input.REQUIRES_PACKER}" == "true"'
+        input:
+          steps:
+          - curl -O ${Preparation.Prepare Container.output.exports.PACKER_DOWNLOAD}
+          - unzip ${input.PACKER_FILE}
+          export: [
+            ]
+          artifacts: [
+            ]
+          process: [
+            ]
